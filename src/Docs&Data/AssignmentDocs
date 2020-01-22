@@ -1,0 +1,38 @@
+IPL Data
+
+column name =
+match_no,year,city,date,team_1,team_2,toss_win_team,field_or_bat,win_or_tie_or_noResult,dont_know,winner_team,dont_know,dont_know,man_of_the_match,name_of_stadiuam,umpire_1,umpire_2
+total column=17
+
+EASY
+
+1> who wins the most number of ipl final?
+2> who wins the most number of ipl matches?
+3> top 3 team who win most number of ipl matches?
+4> in which city the most number of the matches happens??
+5> year-wise number of tie matches
+6> top team who win most of the tosses
+7> city and stadium wise matches number
+8> second-highest team who played won matches
+9> UDF for considering "Deccan Chargers" is "Sunrisers Hyderabad" and "Pune Warriors" is "Rising Pune Supergiants"
+10> top player who won the most number of man of the match
+
+MEDIUM
+
+1> top 4 team who played the least number of matches
+2> top 4 team who played the max number of matches
+3> top 4 team who played the max number of matches in final
+4> which team played most ties matches
+5> second-highest team who played most matches
+
+HARD
+
+1> predict which team needs to play 1st and which team needs to play second that his winning possibilities increases
+2> which team should play on which ground that his winning possibilities increases
+3> top 3 team who win continue 3 matches in any particular year
+4> predict 3 teams which have to win the toss to win match_no
+5> top 3 team who played most number of semi-finals 
+
+** NOTE
+1. please refer IPL package
+1. column would be changed not as per docs please refer columnName object.
