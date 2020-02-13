@@ -1,0 +1,5 @@
+package pureScala
+
+object prac {
+
+}
