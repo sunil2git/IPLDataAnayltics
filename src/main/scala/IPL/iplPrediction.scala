@@ -43,7 +43,7 @@ object iplPrediction {
     val batFieldCount=spark.sql("select t1.winner,t1.bat,t2.field from (select winner,count(winner) as bat from mytable where field_or_bat='bat' group by winner) as t1,(select winner,count(winner) as field from mytable where field_or_bat='field' group by winner) as t2  where t1.winner=t2.winner")
      batFieldCount.createTempView("batFieldCount")
 
-    //spark.sql("select winner,CASE WHEN bat > field THEN 'most win when bat first' ELSE 'most win when field first' END AS batFieldPrediction from batFieldCount" ).show(truncate = false)
+    spark.sql("select winner,CASE WHEN bat > field THEN 'most win when bat first' ELSE 'most win when field first' END AS batFieldPrediction from batFieldCount" ).show(truncate = false)
 
     val batWinner=data.groupBy(columnNames.Winner,columnNames.FieldOrBat).agg(count("*").alias("cnt"))
     val batWinnerCount=batWinner.filter(batWinner(columnNames.FieldOrBat)==="bat")
@@ -74,16 +74,17 @@ object iplPrediction {
     // spark.sql("select winner,count(toss_win_match_win) as cnt from(select winner,CASE WHEN winner = toss_win THEN 1 ELSE 0 END AS toss_win_match_win from mytable) t1 where toss_win_match_win=1  group by winner order by cnt desc " ).show(truncate = false)2,
 
     /** 5> top 3 team who played most number of semi-finals  */
-
    // val iplWinner= spark.sql("select date_sub('2008-06-01',4) from myTable where year='2008'  order by date desc").show()
 
     val semifinal=spark.sql("select * from (select team1,team2,winner,date,dense_rank() over (partition by year order by date desc) rnk from mytable) as t where t.rnk in (2,3) order by date ")
-
+   semifinal.show()
     semifinal.createTempView("semifinal")
 
-   // spark.sql("select team,sum(cnt) as mostSemiFinals from (select count(team1) as cnt, team1 as team from semifinal group by team1 UNION  ALL select count(team2), team2 from semifinal group by team2) group by team order by mostSemiFinals desc ").limit(3).show()
+    spark.sql("select team,sum(cnt) as mostSemiFinals from (select count(team1) as cnt, team1 as team from semifinal group by team1 UNION  ALL select count(team2), team2 from semifinal group by team2) group by team order by mostSemiFinals desc ").limit(3).show()
 
-    spark.sql("select winner,date from mytable group by winner,date order by date ").show()
+   //spark.sql("select winner,team1,team2,date from mytable where date between '2009-01-01' and '2009-12-use'  group by team1,team2,winner,date order by date desc ").show()
+
+
 
   }
 
