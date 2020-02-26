@@ -1,13 +1,13 @@
 package kafkaPOC
 
+
+import java.text.SimpleDateFormat
+
+import com.datastax.spark.connector._
 import org.apache.spark.SparkConf
-import org.apache.spark.streaming.{Seconds, StreamingContext}
-import com.datastax.spark.connector._
-import com.datastax.spark.connector._
-import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql._
-import org.apache.spark.sql.cassandra._
 import org.apache.spark.streaming.dstream.ConstantInputDStream
+import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 case class Employee(id: Int, dept: Int, name: String, salary: Int)
 
@@ -18,8 +18,8 @@ object StreamingPrac1 {
 
     val conf = new SparkConf().setMaster("local[*]").setAppName("kafka-test").set("spark.cassandra.connection.host", "127.0.0.1")
     val ssc = new StreamingContext(conf, Seconds(5))
-   // Logger.getLogger("org").setLevel(Level.OFF)
- //   Logger.getLogger("akka").setLevel(Level.OFF)
+    // Logger.getLogger("org").setLevel(Level.OFF)
+    //   Logger.getLogger("akka").setLevel(Level.OFF)
     val spark = SparkSession
       .builder()
       .master("local[*]")
@@ -27,30 +27,50 @@ object StreamingPrac1 {
       .config("spark.cassandra.connection.host", "127.0.0.1")
       .getOrCreate()
     spark.sparkContext.setLogLevel("OFF")
-    // Create a DStream that will connect to hostname:port, like localhost:9999
-    //  val lines = ssc.socketTextStream("localhost", 9999)
-    //   val lines =  ssc.cassandraTable("mykeyspace", "users").select("fname", "lname").where("lname = ?", "yu")
-    val lines = spark.sparkContext.cassandraTable("testkeyspace", "emp").select("id", "name","salary","dept")
+
+    val time = System.currentTimeMillis()
+    val formatter = new SimpleDateFormat("dd-MM-yyyy hh:mm:sss")
+
+    import java.util.Calendar
+    val calendar = Calendar.getInstance()
+    calendar.setTimeInMillis(time)
+    val date_time = formatter.format(calendar.getTime())
+
+    val emp = spark.sparkContext.cassandraTable("testkeyspace", "emp").select("id", "name", "salary", "dept")
+    val dstream = new ConstantInputDStream(ssc, emp)
 
 
-
-    val dstream = new ConstantInputDStream(ssc, lines)
-
-    dstream.foreachRDD{ rdd =>
+    dstream.foreachRDD { rdd =>
       // any action will trigger the underlying cassandra query, using collect to have a simple output
-      println(rdd.collect.mkString("\n"))
+      println(Console.GREEN + rdd.collect.mkString("\n"))
+      println(Console.BLUE + "===============================================================================")
     }
 
-    val tempEmp=spark.sparkContext.cassandraTable("temp", "tempemp").select("id", "name","salary","dept")
-    val writeStream =new ConstantInputDStream(ssc, tempEmp)
+    val test = dstream.map { r =>
+      val id = r.columnValues(0)
+      val name = r.columnValues(1)
+      val sal = r.columnValues(2)
+      val dept = r.columnValues(3)
+      (id, name, sal, dept, date_time)
+    } // adding column CreatedOn using tuple in RDD
 
-    dstream.foreachRDD(rdd => rdd.saveToCassandra("temp","tempemp",SomeColumns("id","name","salary","dept")))
+    test.foreachRDD(rdd => rdd.saveToCassandra("testkeyspace", "tempemp", SomeColumns("id", "name", "salary", "dept", "createdon")))
+    // writing in the temp.tempemp with extra column CreateOn.
+
+    /*val tempEmp = spark.sparkContext.cassandraTable("temp", "tempemp").select("id", "name", "salary", "dept")
+    val writeStreamEmp = new ConstantInputDStream(ssc, tempEmp)
+
+    writeStreamEmp.foreachRDD(rdd => rdd.saveToCassandra("testkeyspace", "emp", SomeColumns("id", "name", "salary", "dept")))
+
+    writeStreamEmp.foreachRDD { rdd =>
+      // any action will trigger the underlying cassandra query, using collect to have a simple output
+      println(Console.RED + rdd.collect.mkString("\n"))
+    }
+*/
+    //  INSERT INTO tempemp (Id,Name,Salary,Dept,createdon) VALUES(6,'testStreaming',1000000,1,dateof(now()));
 
 
-  //  INSERT INTO emp (Id,Name,Salary,Dept) VALUES(9,'YESSSS',1000000,1);
-
-
-    ssc.start()             // Start the computation
+    ssc.start() // Start the computation
     ssc.awaitTermination()
   }
 }
