@@ -1,9 +1,13 @@
 package kafkaPOC
 
-import org.apache.spark.sql.{SaveMode, SparkSession}
-import com.datastax.spark.connector._
-import org.apache.log4j.{Level, Logger} //Loads implicit functions
+import java.text.SimpleDateFormat
 
+import com.datastax.spark.connector._
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.SparkSession //Loads implicit functions
+
+
+case class emp(id: Int, name: String, salary: Int, dept: Int)
 
 object cassandraTask {
   def main(args: Array[String]): Unit = {
@@ -24,18 +28,40 @@ object cassandraTask {
       .format("org.apache.spark.sql.cassandra")
       .options(Map("table" -> "emp", "keyspace" -> "testkeyspace")).load.cache()
 
-    empDF.show()
-    import com.datastax.spark.connector._
-    import spark.implicits._
+    val emp = spark.sparkContext.cassandraTable("testkeyspace", "emp").select("id", "name", "salary", "dept")
 
 
-    empDF.write.format("org.apache.spark.sql.cassandra").options(Map("table" -> "tempemp", "keyspace" -> "testkeyspace")).mode(SaveMode.Append).save()
+    val data = spark.sparkContext.parallelize(Seq(("sun", 1), ("mon", 2), ("tue", 3), ("wed", 4), ("thus", 5)))
+    val data1 = spark.sparkContext.parallelize(Seq ((9,"Apriliya", 50000,3),(10,"tiktok", 50000,4)))
 
-    val dataSet=spark.sparkContext.parallelize(Seq("8", 3,"test",90909))
+    val time = System.currentTimeMillis()
+    val formatter = new SimpleDateFormat("dd-MM-yyyy hh:mm:sss")
 
-   // dataSet.saveToCassandra("testkeyspace","tempemp")
+    import java.util.Calendar
+    val calendar = Calendar.getInstance()
+    calendar.setTimeInMillis(time)
+    val date_time = formatter.format(calendar.getTime())
 
-    println("Data Insertion Done ")
+
+    println(date_time)
+  println("::::::::::::  emp :::::::::::: ")
+    emp.foreach(println)
+
+    println("::::::::::::  test :::::::::::: ")
+
+    val test = emp.map { r =>
+      val id = r.columnValues(0)
+      val name = r.columnValues(1)
+      val sal = r.columnValues(2)
+      val dept = r.columnValues(3)
+      (id, name, sal,dept,date_time)
+    }
+   test.foreach(println)
+
+    // empDF.write.format("org.apache.spark.sql.cassandra").options(Map("table" -> "tempemp", "keyspace" -> "testkeyspace")).mode(SaveMode.Append).save()
+
+    test.saveToCassandra("testkeyspace", "tempemp", SomeColumns("id","name","salary","dept","createdon"))
+        println("Data Insertion Done ")
 
 
   }
